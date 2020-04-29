@@ -39,15 +39,19 @@ final class UserController extends AbstractController
     /**
      * @Route("/users/{id}", name="users.show", methods={"GET"})
      */
-    public function show(int $id): JsonResponse
+    public function show(Request $request): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
 
-        $user = $this->userRepository->getUserById($id);
+        $data = \json_decode($request->getContent(), true);
 
-        if (!$user) {
+        $userId = $data['user_id'];
+
+        if (!$userId) {
             return new JsonResponse(['message' => 'User not found'], 400);
         }
+        $user = $this->userRepository->getUserById($userId);
+
         $userData = $this->userService->transformUser($user);
 
         return new JsonResponse($userData, 200);
@@ -64,9 +68,14 @@ final class UserController extends AbstractController
          * Should probably validate the request data before processing...
          */
 
+        $data = \json_decode($request->getContent(), true);
+
+        $email = $data['email'];
+        $password = $data['password'];
+
         $user = new User();
-        $user->setEmail($request->get('email'));
-        $user->setPassword($this->passwordEncoder->encodePassword($user, $request->get('password')));
+        $user->setEmail($email);
+        $user->setPassword($this->passwordEncoder->encodePassword($user, $password));
         $em = $this->getDoctrine()->getManager();
         $em->persist($user);
         $em->flush();
@@ -75,7 +84,7 @@ final class UserController extends AbstractController
 
         return new JsonResponse([
             'message' => 'User created',
-            'data' => $user
+            'data' => $userData
         ],
             204);
     }
@@ -91,33 +100,46 @@ final class UserController extends AbstractController
 
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
 
-        $user = $this->userRepository->getUserById($id);
+        $data = \json_decode($request->getContent(), true);
 
+        $password = $data['password'] ?? null;
+        $email = $data['email'] ?? null;
+
+        $user = $this->userRepository->getUserById($id);
+        $em = $this->getDoctrine()->getManager();
         if (!$user) {
             return new JsonResponse(['message' => 'User not found'], 400);
         }
 
-        if ($request->get('password')) {
-            $user->setPassword($this->passwordEncoder->encodePassword($user, $request->get('password')));
+        if ($password) {
+            $user->setPassword($this->passwordEncoder->encodePassword($user, $password));
         }
 
-        if ($request->get('email')) {
-            $user->setEmail($request->get('email'));
+        if ($email) {
+            $user->setEmail($email);
         }
+
+        $em->persist($user);
+        $em->flush();
+
+        $updatedUser = $this->userService->transformUser($user);
 
         return new JsonResponse([
-            'message' => 'User updated'
+            'message' => 'User updated',
+            'data' => $updatedUser
         ], 204);
     }
 
     /**
      * @Route("/users/{id}", name="users.delete", methods={"DELETE"})
      */
-    public function delete(int $id)
+    public function delete(Request $request)
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
 
-        $userId = $id;
+        $data = \json_decode($request->getContent(), true);
+
+        $userId = $data['user_id'];
 
         $user = $this->userRepository->find($userId);
 
