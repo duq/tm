@@ -45,12 +45,13 @@ final class UserController extends AbstractController
 
         $data = \json_decode($request->getContent(), true);
 
-        $userId = $data['user_id'];
+        $userId = $data['user_id'] ?? 0;
 
-        if (!$userId) {
+        $user = $this->userRepository->getUserById($userId);
+
+        if (!$user) {
             return new JsonResponse(['message' => 'User not found'], 400);
         }
-        $user = $this->userRepository->getUserById($userId);
 
         $userData = $this->userService->transformUser($user);
 
