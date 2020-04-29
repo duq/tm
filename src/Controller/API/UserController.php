@@ -29,6 +29,8 @@ final class UserController extends AbstractController
      */
     public function index(): JsonResponse
     {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
         $users = $this->userRepository->getAllUsers();
 
         return new JsonResponse($users, 200);
@@ -39,6 +41,8 @@ final class UserController extends AbstractController
      */
     public function show(int $id): JsonResponse
     {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
         $user = $this->userRepository->getUserById($id);
 
         if (!$user) {
@@ -54,6 +58,8 @@ final class UserController extends AbstractController
      */
     public function store(Request $request)
     {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
         /*
          * Should probably validate the request data before processing...
          */
@@ -65,8 +71,11 @@ final class UserController extends AbstractController
         $em->persist($user);
         $em->flush();
 
+        $userData = $this->userService->transformUser($user);
+
         return new JsonResponse([
-            'message' => 'User created'
+            'message' => 'User created',
+            'data' => $user
         ],
             204);
     }
@@ -76,6 +85,12 @@ final class UserController extends AbstractController
      */
     public function update(int $id, Request $request)
     {
+        /*
+         * Should validate data before processing...
+         */
+
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
         $user = $this->userRepository->getUserById($id);
 
         if (!$user) {
@@ -100,6 +115,8 @@ final class UserController extends AbstractController
      */
     public function delete(int $id)
     {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
         $userId = $id;
 
         $user = $this->userRepository->find($userId);

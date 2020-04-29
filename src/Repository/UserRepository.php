@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\User;
+use App\Services\UserService;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
@@ -17,9 +18,12 @@ use Symfony\Component\Security\Core\User\UserInterface;
  */
 class UserRepository extends ServiceEntityRepository implements PasswordUpgraderInterface
 {
-    public function __construct(ManagerRegistry $registry)
+    private $userService;
+
+    public function __construct(ManagerRegistry $registry, UserService $userService)
     {
         parent::__construct($registry, User::class);
+        $this->userService = $userService;
     }
 
     /**
@@ -37,18 +41,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * @param User $user
-     * @return array
-     */
-    public function transformUser(User $user): array
-    {
-        return [
-          'id' => $user->getId(),
-          'email' => $user->getEmail(),
-        ];
-    }
-
-    /**
      * @return array
      */
     public function getAllUsers(): array
@@ -57,7 +49,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $usersArray = [];
         foreach ($users as $user)
         {
-            $usersArray[] = $this->transformUser($user);
+            $usersArray[] = $this->userService->transformUser($user);
         }
         return $usersArray;
     }
